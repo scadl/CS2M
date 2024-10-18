@@ -23,6 +23,7 @@ namespace CS2M.UI
         private ValueBinding<string> _username;
         private ValueBinding<bool> _joinGameEnabled;
         private ValueBinding<bool> _hostGameEnabled;
+        private ValueBinding<string> _playerStatus;
 
         private ValueBinding<List<ModSupportStatus>> _modSupportStatus;
 
@@ -74,7 +75,10 @@ namespace CS2M.UI
             AddBinding(_username = new ValueBinding<string>(nameof(CS2M), "Username", ""));
             AddBinding(_joinGameEnabled = new ValueBinding<bool>(nameof(CS2M), "JoinGameEnabled", true));
             AddBinding(_hostGameEnabled = new ValueBinding<bool>(nameof(CS2M), "HostGameEnabled", true));
+            
+            AddBinding(_playerStatus = new ValueBinding<string>(nameof(CS2M), "PlayerStatus", ""));
 
+            NetworkInterface.Instance.LocalPlayer.StatusChanged += status => { _playerStatus.Update(status.ToString()); };
         }
 
         private void RefreshModSupport()
