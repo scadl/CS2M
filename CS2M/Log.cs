@@ -44,5 +44,10 @@ namespace CS2M
         {
             Logger.Debug(message);
         }
+
+        public static void Trace(string message)
+        {
+            Logger.Trace(message);
+        }
     }
 }

@@ -11,6 +11,8 @@ namespace CS2M.Networking
 
         public LocalPlayer() : base()
         {
+            PlayerStatusChangedEvent += PlayerStatusChanged;
+            PlayerTypeChangedEvent += PlayerTypeChanged;
         }
 
         public bool GetServerInfo(ConnectionConfig connectionConfig)
@@ -74,7 +76,7 @@ namespace CS2M.Networking
                 Inactive();
                 return false;
             }
-            
+
             PlayerStatus = PlayerStatus.DIRECT_CONNECT;
             return true;
         }
@@ -191,6 +193,16 @@ namespace CS2M.Networking
         public void SendToApiServer(ApiCommandBase message)
         {
             _networkManager.SendToApiServer(message);
+        }
+
+        public void PlayerStatusChanged(PlayerStatus oldPlayerStatus, PlayerStatus newPlayerStatus)
+        {
+            Log.Trace($"LocalPlayer: changed player status from {oldPlayerStatus.ToString()} to {newPlayerStatus.ToString()}");
+        }
+
+        public void PlayerTypeChanged(PlayerType oldPlayerType, PlayerType newPlayerType)
+        {
+            Log.Trace($"LocalPlayer: changed player type from {oldPlayerType.ToString()} to {newPlayerType.ToString()}");
         }
     }
 }
