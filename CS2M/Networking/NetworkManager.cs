@@ -50,14 +50,16 @@ namespace CS2M.Networking
 
         public bool InitConnect(ConnectionConfig connectionConfig)
         {
+            Log.Trace("NetworkManager: InitConnect");
+            
             if (connectionConfig.IsTokenBased())
             {
-                Log.Info($"Attempting to connect to server {connectionConfig.Token}...");
+                Log.Info($"Initialize connect to server {connectionConfig.Token}...");
             }
             else
             {
                 Log.Info(
-                    $"Attempting to connect to server at {connectionConfig.HostAddress}:{connectionConfig.Port}...");
+                    $"Initialize connect to server at {connectionConfig.HostAddress}:{connectionConfig.Port}...");
             }
 
             _connectionConfig = connectionConfig;
@@ -75,6 +77,8 @@ namespace CS2M.Networking
 
         public bool SetupNatConnect()
         {
+            Log.Trace("NetworkManager: Setting up NAT connect");
+            
             IPEndPoint directEndpoint = null;
             if (!_connectionConfig.IsTokenBased())
             {
@@ -98,6 +102,7 @@ namespace CS2M.Networking
             _timeout.AutoReset = false;
             _timeout.Elapsed += (sender, args) =>
             {
+                Log.Debug("NAT hole punch failed, trying direct connect");
                 _pollNatEvent = false;
                 _connectEndpoint = directEndpoint;
                 NatHolePunchFailedEvent?.Invoke();
@@ -107,6 +112,7 @@ namespace CS2M.Networking
             // Can potentially be called multiple times (local and public IP address).
             natPunchListener.NatIntroductionSuccess += (point, type, token) =>
             {
+                Log.Debug($"NAT hole punch successful ({point.Address}:{point.Port})");
                 _pollNatEvent = false;
                 _connectEndpoint = point;
                 bool? eventResult = NatHolePunchSuccessfulEvent?.Invoke();
@@ -130,6 +136,7 @@ namespace CS2M.Networking
             _netManager.NatPunchModule.Init(natPunchListener);
             try
             {
+                Log.Trace("NetworkManager: Start NAT hole punch");
                 _netManager.NatPunchModule.SendNatIntroduceRequest(
                     IPUtil.CreateIP4EndPoint(Mod.ModSettings.ApiServer, Mod.ModSettings.GetApiServerPort()), connect);
                 _timeout.Start();
@@ -150,6 +157,8 @@ namespace CS2M.Networking
                 Log.Error("No valid endpoint to connect to.");
                 return false;
             }
+            
+            Log.Debug($"Connect to {_connectEndpoint.Address}:{_connectEndpoint.Port}");
 
             try
             {
@@ -158,6 +167,7 @@ namespace CS2M.Networking
                 _timeout.AutoReset = false;
                 _timeout.Elapsed += (sender, args) =>
                 {
+                    Log.Debug($"Connect to client ({_connectEndpoint.Address}:{_connectEndpoint.Port}) failed");
                     ClientConnectFailedEvent?.Invoke();
                 };
                 
@@ -176,11 +186,13 @@ namespace CS2M.Networking
         private void ListenerOnNetworkReceiveEvent(NetPeer peer, NetPacketReader reader, byte channel,
             DeliveryMethod deliveryMethod)
         {
+            Log.Trace($"NetworkManager: OnNetworkReceiveEvent [PeerId: {peer.Id}]");
             // TODO: Process received data
         }
 
         private void ListenerOnPeerConnectedEvent(NetPeer peer)
         {
+            Log.Trace($"NetworkManager: OnPeerConnectedEvent [PeerId: {peer.Id}]");
             if (NetworkInterface.Instance.LocalPlayer.PlayerType == PlayerType.CLIENT)
             {
                 _timeout.Enabled = false;
@@ -194,6 +206,7 @@ namespace CS2M.Networking
 
         private void ListenerOnPeerDisconnectedEvent(NetPeer peer, DisconnectInfo disconnectInfo)
         {
+            Log.Trace($"NetworkManager: OnPeerDisconnectedEvent [PeerId: {peer.Id}]");
             if (NetworkInterface.Instance.LocalPlayer.PlayerType == PlayerType.CLIENT)
             {
                 // TODO: Use disconnect info
@@ -213,10 +226,12 @@ namespace CS2M.Networking
 
         private void ListenerOnNetworkLatencyUpdateEvent(NetPeer peer, int latency)
         {
+            Log.Trace($"NetworkManager: OnNetworkLatencyUpdateEvent [PeerId: {peer.Id}, Latency: {latency}]");
         }
 
         private void ListenerOnConnectionRequestEvent(ConnectionRequest request)
         {
+            Log.Trace("NetworkManager: OnConnectionRequestEvent");
             request.AcceptIfKey(ConnectionKey);
         }
 
@@ -267,6 +282,7 @@ namespace CS2M.Networking
         public void SendToApiServer(ApiCommandBase message)
         {
             _apiServer.SendCommand(message);
+            Log.Debug($"Sending {message.GetType().Name} to api server");
         }
 
         public bool StartServer(ConnectionConfig connectionConfig)
